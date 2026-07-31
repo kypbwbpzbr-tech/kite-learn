@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { getNodeById, difficultyNames } from '@/data/knowledge-graph'
 
@@ -16,7 +16,7 @@ const bank: Q[] = [
   { id: 'q7', nodeId: 'g7-polynomial', type: 'choice', content: '下列哪个是单项式？', options: ['x+1', '3x²', '2x+3y', 'x²+2x+1'], answer: '3x²', explanation: '单项式是只有一个项的整式', difficulty: 2 },
 ]
 
-export default function PracticePage() {
+function PracticeContent() {
   const sp = useSearchParams()
   const nid = sp.get('node')
   const [q, setQ] = useState<Q | null>(null)
@@ -144,5 +144,13 @@ export default function PracticePage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function PracticePage() {
+  return (
+    <Suspense fallback={<div className="container py-5"><div className="card text-center py-8 text-gray-400">加载中...</div></div>}>
+      <PracticeContent />
+    </Suspense>
   )
 }

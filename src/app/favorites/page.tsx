@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getNodeById, categoryNames, type KnowledgeNode } from '@/data/knowledge-graph'
+import { getNodeById, type KnowledgeNode } from '@/data/knowledge-graph'
 import { allGradeContent, categoryNames as memoCategoryNames } from '@/data/memorize-data'
 
 // 收藏类型

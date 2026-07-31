@@ -36,7 +36,7 @@ export default function MemorizePage() {
     setCardAnim(true)
     setTimeout(() => {
       const m = new Set(mastered); m.add(item.id); setMastered(m)
-      localStorage.setItem('memorized-items', JSON.stringify([...m]))
+      localStorage.setItem('memorized-items', JSON.stringify(Array.from(m)))
       const p = points + item.points; setPoints(p); localStorage.setItem('kite-points', p.toString())
       const idx = todo.findIndex(i => i.id !== item.id)
       setCur(idx !== -1 ? todo[idx > 0 ? idx : 0] : null); setShow(false)

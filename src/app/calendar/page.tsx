@@ -191,7 +191,7 @@ export default function CalendarPage() {
 
     if (hasNew) {
       setUnlockedAchievements(newUnlocked)
-      localStorage.setItem('unlocked-achievements', JSON.stringify([...newUnlocked]))
+      localStorage.setItem('unlocked-achievements', JSON.stringify(Array.from(newUnlocked)))
     }
   }
 

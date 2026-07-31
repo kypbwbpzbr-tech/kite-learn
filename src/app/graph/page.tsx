@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { getChaptersByGrade, getNodeById, gradeNames, difficultyNames, type KnowledgeNode } from '@/data/knowledge-graph'
 
-export default function GraphPage() {
+function GraphContent() {
   const sp = useSearchParams()
   const [grade, setGrade] = useState(sp.get('grade') || 'g7')
   const [node, setNode] = useState<KnowledgeNode | null>(null)
@@ -101,5 +101,13 @@ export default function GraphPage() {
         </>
       )}
     </div>
+  )
+}
+
+export default function GraphPage() {
+  return (
+    <Suspense fallback={<div className="container py-5"><div className="card text-center py-8 text-gray-400">加载中...</div></div>}>
+      <GraphContent />
+    </Suspense>
   )
 }
