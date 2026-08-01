@@ -18,7 +18,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </AuthGuard>
         </AuthProvider>
 
-        <nav className="fixed bottom-0 left-0 right-0 glass-nav z-50 no-print" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        {/* 学生端底部导航栏 - 家长端页面时隐藏 */}
+        <nav
+          className="fixed bottom-0 left-0 right-0 glass-nav z-50 no-print student-nav"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+          id="student-nav"
+        >
           <div className="flex justify-around items-center max-w-lg mx-auto h-[68px]">
             <a href="/" className="nav-tab flex flex-col items-center gap-1 w-14" data-tab="home">
               <div className="relative">
@@ -64,6 +69,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <script dangerouslySetInnerHTML={{ __html: `
           (function(){
+            // 检查是否是家长端页面
+            var isParentPage = window.location.pathname.startsWith('/parent');
+
+            // 家长端页面时隐藏学生端导航
+            var studentNav = document.getElementById('student-nav');
+            if (studentNav) {
+              studentNav.style.display = isParentPage ? 'none' : 'block';
+            }
+
             // 导航高亮
             var p=window.location.pathname;
             document.querySelectorAll('.nav-tab').forEach(function(i){

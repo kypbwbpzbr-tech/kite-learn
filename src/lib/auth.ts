@@ -13,11 +13,15 @@ export interface GitHubUser {
 const SESSION_KEY = 'kite-session'
 const GIST_ID_KEY = 'kite-gist-id'
 
-// GitHub OAuth 配置
-const GITHUB_CLIENT_ID = 'Ov23li0V9qq2pQ0bRV7s'
+// GitHub OAuth 配置（从环境变量读取）
+const GITHUB_CLIENT_ID = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID
 
 // 跳转到 GitHub 授权页面
 export function redirectToGitHub() {
+  if (!GITHUB_CLIENT_ID) {
+    console.error('Missing NEXT_PUBLIC_GITHUB_CLIENT_ID')
+    return
+  }
   const redirectUri = `${window.location.origin}/api/auth/github/callback`
   const url = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=gist`
   window.location.href = url

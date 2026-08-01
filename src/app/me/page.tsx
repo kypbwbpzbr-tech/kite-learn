@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
 import { saveUserData } from '@/lib/sync'
+import { getStudentInviteCode, generateInviteCode, isStudent } from '@/lib/role-service'
 
 const levels = [
   { level: 1, name: '小风筝', points: 0, emoji: '🪁' },
@@ -21,6 +22,9 @@ export default function MePage() {
   const [stats, setStats] = useState({ m: 0, e: 0, f: 0, d: 0 })
   const [editing, setEditing] = useState(false)
   const [visible, setVisible] = useState(false)
+  const [inviteCode, setInviteCode] = useState<string | null>(null)
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     requestAnimationFrame(() => setTimeout(() => setVisible(true), 50))
@@ -32,6 +36,11 @@ export default function MePage() {
       f: JSON.parse(localStorage.getItem('favorites') || '[]').length,
       d: JSON.parse(localStorage.getItem('study-records') || '[]').length,
     })
+    // 加载邀请码
+    if (user) {
+      const code = getStudentInviteCode(user.id.toString())
+      setInviteCode(code)
+    }
   }, [user])
 
   const getLevel = () => { for (let i = levels.length - 1; i >= 0; i--) { if (points >= levels[i].points) return levels[i] } return levels[0] }
@@ -48,12 +57,65 @@ export default function MePage() {
     router.push('/login')
   }
 
+  // 生成邀请码
+  const handleGenerateInviteCode = async () => {
+    if (user) {
+      const code = generateInviteCode(user.id.toString())
+      setInviteCode(code)
+      setShowInviteModal(true)
+
+      // 将邀请码注册到数据库
+      try {
+        await fetch('/api/invite/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code,
+            userId: user.id.toString(),
+            userName: user.name || name
+          })
+        })
+      } catch (error) {
+        console.error('注册邀请码失败:', error)
+      }
+    }
+  }
+
+  // 复制邀请码
+  const handleCopyCode = async () => {
+    if (inviteCode) {
+      try {
+        await navigator.clipboard.writeText(inviteCode)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } catch {
+        // 降级方案
+        const textArea = document.createElement('textarea')
+        textArea.value = inviteCode
+        document.body.appendChild(textArea)
+        textArea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textArea)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }
+    }
+  }
+
   const menus = [
     { icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>, label: '学习日历', href: '/calendar', color: 'bg-blue-50 text-blue-500' },
     { icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>, label: '学习计划', href: '/plan', color: 'bg-green-50 text-green-500' },
     { icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>, label: '我的收藏', href: '/favorites', color: 'bg-yellow-50 text-yellow-500' },
     { icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>, label: '积分明细', href: '/points', color: 'bg-orange-50 text-orange-500' },
   ]
+
+  // 家长绑定入口（学生角色时显示）
+  const inviteMenu = isStudent() ? {
+    icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+    label: '邀请家长',
+    onClick: handleGenerateInviteCode,
+    color: 'bg-purple-50 text-purple-500'
+  } : null
 
   const stagger = (i: number) => ({
     opacity: visible ? 1 : 0,
@@ -134,6 +196,20 @@ export default function MePage() {
             </svg>
           </a>
         ))}
+
+        {/* 邀请家长入口 */}
+        {inviteMenu && (
+          <button
+            onClick={inviteMenu.onClick}
+            className="w-full flex items-center gap-3.5 py-4 active:scale-[0.98] transition-all duration-200 border-t border-black/[0.04]"
+          >
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-transform duration-300 hover:scale-110 ${inviteMenu.color}`}>{inviteMenu.icon}</div>
+            <span className="flex-1 text-[14px] font-medium text-gray-700 text-left">{inviteMenu.label}</span>
+            <svg className="w-4 h-4 text-gray-300 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* 退出登录 */}
@@ -145,6 +221,50 @@ export default function MePage() {
           退出登录
         </button>
       </div>
+
+      {/* 邀请码弹窗 */}
+      {showInviteModal && inviteCode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowInviteModal(false)} />
+          <div className="relative bg-white rounded-2xl p-6 w-full max-w-sm animate-scale">
+            <h3 className="text-lg font-bold text-gray-800 mb-2 text-center">邀请家长</h3>
+            <p className="text-sm text-gray-600 text-center mb-6">
+              将以下邀请码分享给您的家长
+            </p>
+
+            {/* 邀请码展示 */}
+            <div className="bg-gray-50 rounded-xl p-6 text-center mb-4">
+              <div className="text-3xl font-mono font-bold tracking-[0.3em] text-orange-500">
+                {inviteCode}
+              </div>
+            </div>
+
+            {/* 复制按钮 */}
+            <button
+              onClick={handleCopyCode}
+              className={`w-full py-3 rounded-xl font-semibold text-white transition-all ${
+                copied ? 'bg-green-500' : 'btn-primary'
+              }`}
+            >
+              {copied ? '✓ 已复制' : '复制邀请码'}
+            </button>
+
+            {/* 关闭按钮 */}
+            <button
+              onClick={() => setShowInviteModal(false)}
+              className="w-full py-2 mt-2 text-gray-500 hover:text-gray-700 text-sm"
+            >
+              关闭
+            </button>
+
+            {/* 说明 */}
+            <div className="mt-4 text-xs text-gray-400 text-center space-y-1">
+              <p>家长登录后输入此邀请码</p>
+              <p>即可查看您的学习情况</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

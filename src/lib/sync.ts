@@ -2,6 +2,7 @@
 // 用户数据存储在 GitHub Gist 中，实现跨设备同步
 
 import { getGistId, saveGistId } from './auth'
+import { getRole, isStudent } from './role-service'
 
 const SYNC_KEYS = [
   'user-name',
@@ -13,6 +14,10 @@ const SYNC_KEYS = [
   'daily-goals',
   'learning-calendar',
   'study-plan',
+  'parent-goals',
+  'user-role',
+  'parent-child',
+  'my-invite-code',
 ]
 
 // 收集 localStorage 数据
