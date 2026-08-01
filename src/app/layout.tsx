@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { AuthProvider } from '@/lib/auth-context'
+import { AuthGuard } from './auth-guard'
 
 export const metadata: Metadata = {
   title: '风筝学堂',
@@ -10,7 +12,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="zh-CN">
       <body>
-        <main className="min-h-screen pb-20" id="main-content">{children}</main>
+        <AuthProvider>
+          <AuthGuard>
+            <main className="min-h-screen pb-20" id="main-content">{children}</main>
+          </AuthGuard>
+        </AuthProvider>
 
         <nav className="fixed bottom-0 left-0 right-0 glass-nav z-50 no-print" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <div className="flex justify-around items-center max-w-lg mx-auto h-[68px]">

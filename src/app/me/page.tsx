@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAuth } from '@/lib/auth-context'
+import { useRouter } from 'next/navigation'
+import { saveUserData } from '@/lib/sync'
 
 const levels = [
   { level: 1, name: '小风筝', points: 0, emoji: '🪁' },
@@ -11,6 +14,8 @@ const levels = [
 ]
 
 export default function MePage() {
+  const { user, logout } = useAuth()
+  const router = useRouter()
   const [name, setName] = useState('同学')
   const [points, setPoints] = useState(0)
   const [stats, setStats] = useState({ m: 0, e: 0, f: 0, d: 0 })
@@ -19,7 +24,7 @@ export default function MePage() {
 
   useEffect(() => {
     requestAnimationFrame(() => setTimeout(() => setVisible(true), 50))
-    setName(localStorage.getItem('user-name') || '同学')
+    setName(localStorage.getItem('user-name') || user?.name || '同学')
     setPoints(parseInt(localStorage.getItem('kite-points') || '0'))
     setStats({
       m: JSON.parse(localStorage.getItem('memorized-items') || '[]').length,
@@ -27,13 +32,21 @@ export default function MePage() {
       f: JSON.parse(localStorage.getItem('favorites') || '[]').length,
       d: JSON.parse(localStorage.getItem('study-records') || '[]').length,
     })
-  }, [])
+  }, [user])
 
   const getLevel = () => { for (let i = levels.length - 1; i >= 0; i--) { if (points >= levels[i].points) return levels[i] } return levels[0] }
   const getNext = () => { const l = getLevel(); const i = levels.findIndex(x => x.level === l.level); return i < levels.length - 1 ? levels[i + 1] : null }
 
   const lv = getLevel(); const nx = getNext()
   const prog = nx ? ((points - lv.points) / (nx.points - lv.points)) * 100 : 100
+
+  const handleSignOut = async () => {
+    if (user) {
+      await saveUserData(user.access_token)
+    }
+    logout()
+    router.push('/login')
+  }
 
   const menus = [
     { icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>, label: '学习日历', href: '/calendar', color: 'bg-blue-50 text-blue-500' },
@@ -54,9 +67,13 @@ export default function MePage() {
       <div style={stagger(0)} className="card mb-4">
         <div className="flex items-center gap-4">
           <div className="relative">
-            <div className="w-[68px] h-[68px] rounded-[22px] bg-gradient-to-br from-[#FFB878] via-[#FF9A5C] to-[#F97316] flex items-center justify-center text-[36px] shadow-[0_4px_20px_rgba(249,115,22,0.25)] active:scale-95 transition-transform duration-300">
-              {lv.emoji}
-            </div>
+            {user?.avatar_url ? (
+              <img src={user.avatar_url} alt="avatar" className="w-[68px] h-[68px] rounded-[22px] object-cover shadow-[0_4px_20px_rgba(249,115,22,0.25)]" />
+            ) : (
+              <div className="w-[68px] h-[68px] rounded-[22px] bg-gradient-to-br from-[#FFB878] via-[#FF9A5C] to-[#F97316] flex items-center justify-center text-[36px] shadow-[0_4px_20px_rgba(249,115,22,0.25)]">
+                {lv.emoji}
+              </div>
+            )}
             <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center text-[12px] border border-orange-100">✨</div>
           </div>
           <div className="flex-1">
@@ -69,7 +86,7 @@ export default function MePage() {
             ) : (
               <div onClick={() => setEditing(true)} className="cursor-pointer active:scale-[0.98] transition-transform duration-200">
                 <div className="text-[18px] font-bold text-gray-900">{name}</div>
-                <div className="text-[11px] text-gray-400 mt-0.5">点击编辑</div>
+                <div className="text-[11px] text-gray-400 mt-0.5">@{user?.login || '点击编辑'}</div>
               </div>
             )}
             <div className="flex items-center gap-2 mt-2.5">
@@ -117,6 +134,16 @@ export default function MePage() {
             </svg>
           </a>
         ))}
+      </div>
+
+      {/* 退出登录 */}
+      <div style={stagger(3)} className="mt-4">
+        <button
+          onClick={handleSignOut}
+          className="w-full card text-center py-3.5 text-[14px] font-medium text-red-400 hover:text-red-500 hover:bg-red-50/50 active:scale-[0.98] transition-all duration-300"
+        >
+          退出登录
+        </button>
       </div>
     </div>
   )
