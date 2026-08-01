@@ -5,6 +5,8 @@ const nextConfig = {
     unoptimized: true,
   },
   output: 'export',
+  basePath: '/kite-learn',
+  assetPrefix: '/kite-learn',
 }
 
 module.exports = nextConfig
